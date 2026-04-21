@@ -48,8 +48,14 @@ def ensure_infrastructure():
         try:
             s3.create_bucket(Bucket=bucket)
             log.info(f"Bucket creado: {bucket}")
+        except ClientError as e:
+            code = e.response['Error']['Code']
+            if code not in ('BucketAlreadyExists', 'BucketAlreadyOwnedByYou'):
+                raise
         except Exception:
-            pass  # ya existe
+            # MinIO devuelve errores no-ClientError para buckets existentes;
+            # cualquier otro error de conexión sí debe propagarse.
+            pass
 
     dynamo = get_dynamo()
     table_name = os.getenv('DYNAMODB_TABLE', 'consent-state')
@@ -69,9 +75,16 @@ def ensure_infrastructure():
 # ─── Validación ───────────────────────────────────────────────────────────────
 
 REQUIRED_FIELDS = [
+    # Identidad / scheduling
     'consent_id', 'patient_id', 'patient_age', 'procedure_type',
-    'consent_signed', 'anesthesia_type', 'clinic_id', 'surgeon_id',
-    'scheduled_date', 'pre_op_clearance',
+    'anesthesia_type', 'clinic_id', 'surgeon_id', 'scheduled_date',
+    # Consentimiento
+    'consent_signed', 'risk_acknowledgement', 'consent_to_surgery_hours',
+    # Datos clínicos del paciente — accedidos en enrich()
+    'patient_bmi', 'smoker', 'diabetic', 'hypertensive',
+    'is_minor', 'legal_guardian_required',
+    # Pre-op
+    'pre_op_clearance', 'pre_op_labs_completed', 'missing_fields_count',
 ]
 
 def validate(event: dict) -> tuple[bool, list[str]]:
@@ -238,6 +251,8 @@ def main():
     log.info(f"Processor arriba — escuchando: consent-events-raw")
 
     for message in consumer:
+        raw_event = None
+        passed_validation = False
         try:
             raw_event = message.value
 
@@ -249,6 +264,8 @@ def main():
             if not is_valid:
                 save_to_dlq(s3, raw_event, errors)
                 continue
+
+            passed_validation = True
 
             # 3. Enriquecer
             enriched = enrich(raw_event)
@@ -269,6 +286,16 @@ def main():
 
         except Exception as e:
             log.error(f"Error procesando mensaje: {e}", exc_info=True)
+            # Eventos que pasaron validación pero fallaron en enriquecimiento o
+            # persistencia van al DLQ para no perderse silenciosamente.
+            if passed_validation and raw_event is not None:
+                try:
+                    save_to_dlq(
+                        s3, raw_event,
+                        [f"processing_error:{type(e).__name__}:{e}"],
+                    )
+                except Exception as dlq_err:
+                    log.error(f"Fallo al escribir en DLQ: {dlq_err}")
 
 if __name__ == '__main__':
     main()
