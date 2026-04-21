@@ -1,0 +1,49 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.Python
+env/
+venv/
+.venv/
+*.egg-info/
+dist/
+build/
+
+# Variables de entorno - NUNCA subir al repo
+.env
+*.env
+
+# Datos locales - pueden ser pesados
+data/sample_data/*.json
+data/sample_data/*.csv
+data/sample_data/*.avro
+data/kaggle/
+
+# Jupyter
+.ipynb_checkpoints/
+notebooks/.ipynb_checkpoints/
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+
+# AWS credentials - NUNCA subir
+.aws/
+credentials
+aws_credentials.json
+
+# Docker volumes locales
+infra/docker/volumes/
+
+# MinIO data local
+infra/docker/minio_data/
+
+# Logs
+*.log
+logs/
+
+# OS
+.DS_Store
+Thumbs.db

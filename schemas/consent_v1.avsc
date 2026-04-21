@@ -1,0 +1,40 @@
+{
+  "type": "record",
+  "name": "ConsentEvent",
+  "namespace": "com.healthcare.consent",
+  "doc": "Evento de consentimiento informado para cirugía estética - v1",
+  "fields": [
+    {"name": "consent_id",           "type": "string",  "doc": "UUID único del consentimiento"},
+    {"name": "schema_version",        "type": "string",  "default": "1.0"},
+    {"name": "event_timestamp",       "type": "long",    "doc": "Unix timestamp ms"},
+    {"name": "patient_id",            "type": "string"},
+    {"name": "patient_age",           "type": "int"},
+    {"name": "patient_gender",        "type": {"type": "enum", "name": "Gender", "symbols": ["M", "F", "OTHER"]}},
+    {"name": "patient_bmi",           "type": "float"},
+    {"name": "blood_type",            "type": "string"},
+    {"name": "smoker",                "type": "boolean"},
+    {"name": "diabetic",              "type": "boolean"},
+    {"name": "hypertensive",          "type": "boolean"},
+    {"name": "has_allergies",         "type": "boolean"},
+    {"name": "allergy_list",          "type": {"type": "array", "items": "string"}, "default": []},
+    {"name": "previous_surgeries",    "type": "int",     "default": 0},
+    {"name": "clinic_id",             "type": "string"},
+    {"name": "surgeon_id",            "type": "string"},
+    {"name": "procedure_type",        "type": {"type": "enum", "name": "ProcedureType", "symbols": [
+      "RHINOPLASTY", "LIPOSUCTION", "BREAST_AUGMENTATION",
+      "ABDOMINOPLASTY", "BLEPHAROPLASTY", "FACELIFT", "OTHER"
+    ]}},
+    {"name": "anesthesia_type",       "type": {"type": "enum", "name": "AnesthesiaType", "symbols": ["LOCAL", "GENERAL", "SEDATION"]}},
+    {"name": "scheduled_date",        "type": "string",  "doc": "ISO 8601 date"},
+    {"name": "estimated_duration_min","type": "int"},
+    {"name": "consent_signed",        "type": "boolean"},
+    {"name": "witness_present",       "type": "boolean"},
+    {"name": "is_minor",              "type": "boolean"},
+    {"name": "legal_guardian_required","type": "boolean"},
+    {"name": "risk_acknowledgement",  "type": "int",     "doc": "Score 1-5"},
+    {"name": "pre_op_labs_completed", "type": "boolean"},
+    {"name": "pre_op_clearance",      "type": {"type": "enum", "name": "ClearanceStatus", "symbols": ["APPROVED", "PENDING", "REJECTED"]}},
+    {"name": "consent_to_surgery_hours","type": "float", "doc": "Horas entre firma y cirugía"},
+    {"name": "missing_fields_count",  "type": "int",     "default": 0}
+  ]
+}
