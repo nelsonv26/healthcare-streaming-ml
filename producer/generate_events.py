@@ -20,6 +20,13 @@ ANESTHESIA     = ['LOCAL','GENERAL','SEDATION']
 BLOOD_TYPES    = ['A+','A-','B+','B-','AB+','AB-','O+','O-']
 CLEARANCE      = ['APPROVED','PENDING','REJECTED']
 ALLERGIES_POOL = ['penicilina','ibuprofeno','látex','aspirina','morfina','yodo']
+NATIONALITIES    = ['CO','MX','VE','EC','PE','AR','US','ES']
+CONSENT_CHANNELS = ['DIGITAL','PAPER','VIDEOCALL','HYBRID']
+
+COMPLEXITY_MAP = {
+    'RHINOPLASTY': 2, 'LIPOSUCTION': 3, 'BREAST_AUGMENTATION': 3,
+    'ABDOMINOPLASTY': 4, 'BLEPHAROPLASTY': 2, 'FACELIFT': 4, 'OTHER': 1
+}
 
 def make_event() -> dict:
     age         = random.randint(16, 72)
@@ -51,7 +58,7 @@ def make_event() -> dict:
         "previous_surgeries":      random.randint(0, 5),
         "clinic_id":               f"CLINIC-{random.randint(1,10):03d}",
         "surgeon_id":              f"SURG-{random.randint(1,30):03d}",
-        "procedure_type":          random.choice(PROCEDURES),
+        "procedure_type":          (procedure := random.choice(PROCEDURES)),
         "anesthesia_type":         anesthesia,
         "scheduled_date":          (datetime.utcnow() + timedelta(hours=sched_delta)).strftime('%Y-%m-%d'),
         "estimated_duration_min":  random.randint(30, 360),
@@ -64,6 +71,9 @@ def make_event() -> dict:
         "pre_op_clearance":        random.choice(CLEARANCE),
         "consent_to_surgery_hours":round(sched_delta, 2),
         "missing_fields_count":    missing,
+        "patient_nationality": random.choice(NATIONALITIES),
+"consent_channel":     random.choice(CONSENT_CHANNELS),
+"surgery_complexity":  COMPLEXITY_MAP.get(procedure, 1),
     }
 
 def main():
