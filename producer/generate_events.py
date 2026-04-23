@@ -43,7 +43,7 @@ def make_event() -> dict:
 
     return {
         "consent_id":              str(uuid.uuid4()),
-        "schema_version":          "1.0",
+        "schema_version":          "2.0",
         "event_timestamp":         int(datetime.utcnow().timestamp() * 1000),
         "patient_id":              str(uuid.uuid4()),
         "patient_age":             age,

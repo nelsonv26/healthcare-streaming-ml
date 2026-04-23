@@ -25,3 +25,15 @@ output "dynamodb_table" {
 output "lambda_role_arn" {
   value = aws_iam_role.lambda_role.arn
 }
+
+output "lambda_function_name" {
+  value = aws_lambda_function.processor.function_name
+}
+
+## output "glue_job_name" {
+##  value = aws_glue_job.raw_to_processed.name
+##}
+
+output "lambda_inference_name" {
+  value = aws_lambda_function.inference.function_name
+}
