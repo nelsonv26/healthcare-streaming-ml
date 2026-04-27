@@ -51,11 +51,10 @@ resource "aws_lambda_event_source_mapping" "inference_sqs" {
 }
 
 
-# ─── Lambda del processor (ya desplegada — solo se referencia) ───────────────
-# Se usa data source para importar su estado sin recrearla.
-# Si la Lambda del processor aún no existe, reemplaza "data" por "resource"
-# y apunta su filename al zip del processor adaptado para SQS.
-
-data "aws_lambda_function" "processor" {
-  function_name = var.lambda_processor_name
-}
+# ─── Lambda del processor (referencia opcional) ──────────────────────────────
+# Descomenta este bloque SOLO si el processor Lambda ya existe en tu cuenta.
+# Si aún no existe, déjalo comentado — no afecta el despliegue de la inferencia.
+#
+# data "aws_lambda_function" "processor" {
+#   function_name = var.lambda_processor_name
+# }
