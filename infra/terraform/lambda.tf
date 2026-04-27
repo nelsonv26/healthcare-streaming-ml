@@ -1,60 +1,77 @@
-# ─── Empaquetado automático de la Lambda de inferencia ───────────────────────
-# archive_file crea el zip en cada terraform apply si el código cambió.
-# No es necesario ningún paso manual de build ni Lambda Layer.
-
-data "archive_file" "inference" {
+data "archive_file" "lambda_zip" {
   type        = "zip"
-  source_file = "${path.module}/../../lambda/lambda_inference.py"
-  output_path = "${path.module}/../../lambda/lambda_inference.zip"
+  source_file = "${path.module}/../../lambda/lambda_function.py"
+  output_path = "${path.module}/lambda_function.zip"
 }
 
-
-# ─── Lambda de inferencia (nueva) ────────────────────────────────────────────
-
-resource "aws_lambda_function" "inference" {
-  function_name    = var.lambda_inference_name
-  filename         = data.archive_file.inference.output_path
-  source_code_hash = data.archive_file.inference.output_base64sha256
-  role             = aws_iam_role.lambda_inference.arn
-  handler          = "lambda_inference.handler"
+resource "aws_lambda_function" "processor" {
+  filename         = data.archive_file.lambda_zip.output_path
+  function_name    = "${var.project_name}-processor"
+  role             = aws_iam_role.lambda_role.arn
+  handler          = "lambda_function.lambda_handler"
   runtime          = "python3.11"
   timeout          = 30
   memory_size      = 256
+  source_code_hash = data.archive_file.lambda_zip.output_base64sha256
 
   environment {
     variables = {
-      S3_PROCESSED_BUCKET = var.s3_processed_bucket
-      DYNAMODB_TABLE_AWS  = var.dynamodb_table
-      MODEL_KEY           = var.model_key  # reservado para futura reintegración de pkl
-      LOG_LEVEL           = "INFO"
+      S3_RAW_BUCKET       = aws_s3_bucket.raw.bucket
+      S3_PROCESSED_BUCKET = aws_s3_bucket.processed.bucket
+      DYNAMODB_TABLE_AWS  = aws_dynamodb_table.consent_state.name
+      SQS_PROCESSED_URL   = aws_sqs_queue.processed.url
+      SQS_DLQ_URL         = aws_sqs_queue.dlq.url
     }
   }
 
-  dead_letter_config {
-    target_arn = aws_sqs_queue.inference_dlq.arn
-  }
-
-  depends_on = [aws_iam_role_policy.lambda_inference]
-}
-
-# Disparo: SQS → Lambda de inferencia
-resource "aws_lambda_event_source_mapping" "inference_sqs" {
-  event_source_arn                   = aws_sqs_queue.inference_input.arn
-  function_name                      = aws_lambda_function.inference.arn
-  batch_size                         = 10
-  maximum_batching_window_in_seconds = 5
-  function_response_types            = ["ReportBatchItemFailures"]
-
-  scaling_config {
-    maximum_concurrency = 5
+  tags = {
+    Project     = var.project_name
+    Environment = var.environment
   }
 }
 
+resource "aws_lambda_event_source_mapping" "sqs_trigger" {
+  event_source_arn = aws_sqs_queue.raw.arn
+  function_name    = aws_lambda_function.processor.arn
+  batch_size       = 10
+  enabled          = true
+}
 
-# ─── Lambda del processor (referencia opcional) ──────────────────────────────
-# Descomenta este bloque SOLO si el processor Lambda ya existe en tu cuenta.
-# Si aún no existe, déjalo comentado — no afecta el despliegue de la inferencia.
-#
-# data "aws_lambda_function" "processor" {
-#   function_name = var.lambda_processor_name
-# }
+resource "aws_lambda_layer_version" "sklearn" {
+  layer_name          = "${var.project_name}-sklearn"
+  compatible_runtimes = ["python3.11"]
+
+  s3_bucket = aws_s3_bucket.processed.bucket
+  s3_key    = "layers/sklearn_layer.zip"
+}
+
+data "archive_file" "inference_zip" {
+  type        = "zip"
+  source_file = "${path.module}/../../lambda/lambda_inference.py"
+  output_path = "${path.module}/lambda_inference.zip"
+}
+
+resource "aws_lambda_function" "inference" {
+  filename         = data.archive_file.inference_zip.output_path
+  function_name    = "${var.project_name}-inference"
+  role             = aws_iam_role.lambda_role.arn
+  handler          = "lambda_inference.lambda_handler"
+  runtime          = "python3.11"
+  timeout          = 60
+  memory_size      = 512
+  source_code_hash = data.archive_file.inference_zip.output_base64sha256
+  layers           = [aws_lambda_layer_version.sklearn.arn]
+
+  environment {
+    variables = {
+      S3_PROCESSED_BUCKET = aws_s3_bucket.processed.bucket
+      DYNAMODB_TABLE_AWS  = aws_dynamodb_table.consent_state.name
+      MODEL_KEY           = "models/risk_model.pkl"
+    }
+  }
+
+  tags = {
+    Project     = var.project_name
+    Environment = var.environment
+  }
+}

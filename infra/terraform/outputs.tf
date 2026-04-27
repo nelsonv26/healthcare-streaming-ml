@@ -1,24 +1,39 @@
-output "inference_lambda_arn" {
-  description = "ARN de la Lambda de inferencia"
-  value       = aws_lambda_function.inference.arn
+output "sqs_raw_url" {
+  value = aws_sqs_queue.raw.url
 }
 
-output "inference_lambda_name" {
-  description = "Nombre de la Lambda de inferencia"
-  value       = aws_lambda_function.inference.function_name
+output "sqs_processed_url" {
+  value = aws_sqs_queue.processed.url
 }
 
-output "inference_queue_url" {
-  description = "URL de la cola SQS de inferencia (enviar aquí los eventos a predecir)"
-  value       = aws_sqs_queue.inference_input.url
+output "sqs_dlq_url" {
+  value = aws_sqs_queue.dlq.url
 }
 
-output "inference_queue_arn" {
-  description = "ARN de la cola SQS de inferencia"
-  value       = aws_sqs_queue.inference_input.arn
+output "s3_raw_bucket" {
+  value = aws_s3_bucket.raw.bucket
 }
 
-output "inference_dlq_url" {
-  description = "URL de la Dead Letter Queue de inferencia"
-  value       = aws_sqs_queue.inference_dlq.url
+output "s3_processed_bucket" {
+  value = aws_s3_bucket.processed.bucket
+}
+
+output "dynamodb_table" {
+  value = aws_dynamodb_table.consent_state.name
+}
+
+output "lambda_role_arn" {
+  value = aws_iam_role.lambda_role.arn
+}
+
+output "lambda_function_name" {
+  value = aws_lambda_function.processor.function_name
+}
+
+## output "glue_job_name" {
+##  value = aws_glue_job.raw_to_processed.name
+##}
+
+output "lambda_inference_name" {
+  value = aws_lambda_function.inference.function_name
 }
