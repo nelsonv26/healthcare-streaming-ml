@@ -54,8 +54,11 @@ Thumbs.db
 terraform.tfstate
 terraform.tfstate.backup
 
-echo "infra/terraform/*.zip" >> .gitignore
-echo "infra/terraform/terraform.tfstate" >> .gitignore
-echo "infra/terraform/terraform.tfstate.backup" >> .gitignore
-echo "infra/terraform/.terraform.lock.hcl" >> .gitignore
-echo "lambda_layer/" >> .gitignore
+# Terraform generated
+infra/terraform/*.zip
+infra/terraform/terraform.tfstate
+infra/terraform/terraform.tfstate.backup
+infra/terraform/.terraform.lock.hcl
+
+# Lambda layer
+lambda_layer/
