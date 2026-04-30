@@ -37,14 +37,6 @@ resource "aws_lambda_event_source_mapping" "sqs_trigger" {
   enabled          = true
 }
 
-resource "aws_lambda_layer_version" "sklearn" {
-  layer_name          = "${var.project_name}-sklearn"
-  compatible_runtimes = ["python3.11"]
-
-  s3_bucket = aws_s3_bucket.processed.bucket
-  s3_key    = "layers/sklearn_layer.zip"
-}
-
 data "archive_file" "inference_zip" {
   type        = "zip"
   source_file = "${path.module}/../../lambda/lambda_inference.py"
@@ -60,7 +52,6 @@ resource "aws_lambda_function" "inference" {
   timeout          = 60
   memory_size      = 512
   source_code_hash = data.archive_file.inference_zip.output_base64sha256
-  layers           = [aws_lambda_layer_version.sklearn.arn]
 
   environment {
     variables = {
